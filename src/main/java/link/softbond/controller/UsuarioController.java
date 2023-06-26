@@ -1,5 +1,7 @@
 package link.softbond.controller;
 
+import javax.naming.AuthenticationException;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -36,23 +38,28 @@ public class UsuarioController {
     public ResponseEntity<Usuario> registerNewUser(@RequestBody UsuarioDTO usuarioDto) {
         try {
             Usuario newUser = usuarioService.registerNewUser(usuarioDto);
-            return new ResponseEntity<>(newUser, HttpStatus.CREATED);
+            return ResponseEntity.status(HttpStatus.CREATED).body(newUser);
         } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
-    
-    @PostMapping("/auth")
-    public ResponseEntity<String> authenticateUser(@RequestBody UsuarioDTO userDto) throws Exception {
-        Authentication authentication = authenticationManager.authenticate(
-            new UsernamePasswordAuthenticationToken(
-                userDto.getUsuario(),
-                userDto.getClave()
-            )
-        );
 
-        SecurityContextHolder.getContext().setAuthentication(authentication);
-        String jwt = jwtService.create(authentication);
-        return ResponseEntity.ok(jwt);
+    @PostMapping("/auth")
+    public ResponseEntity<String> authenticateUser(@RequestBody UsuarioDTO userDto) throws AuthenticationException {
+        try {
+            Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                    userDto.getUsuario(),
+                    userDto.getClave()
+                )
+            );
+
+            String token = jwtService.create(authentication);
+            return ResponseEntity.ok(token);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred");
+        }
     }
+
+    
 }
